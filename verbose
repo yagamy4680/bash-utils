@@ -1,0 +1,49 @@
+#!/bin/bash
+
+function LIGHT_GREEN {
+	COLOR='\033[1;32m'
+	NC='\033[0m'
+	echo "${COLOR}$@${NC}"
+}
+
+function LIGHT_GRAY {
+	COLOR='\033[0;37m'
+	NC='\033[0m'
+	echo "${COLOR}$1${NC}"
+}
+
+function GRAY {
+	COLOR='\033[1;90m'
+	NC='\033[0m'
+	echo "${COLOR}$@${NC}"
+}
+
+function BLUE {
+	COLOR='\033[1;34m'
+	NC='\033[0m'
+	echo "${COLOR}$@${NC}"
+}
+
+function TIMESTAMP {
+	date '+%H:%M:%S' 2>&1
+}
+
+function DBG {
+	[ "true" == "${SCRIPT_DEBUG}" ] && echo -e "$(GRAY $(TIMESTAMP)) $(BLUE ${SCRIPT_NAME}) DBG: $@"
+}
+
+function INFO {
+	echo -e "$(GRAY $(TIMESTAMP)) $(BLUE ${SCRIPT_NAME}) MSG: $@"
+}
+
+function ERR {
+	echo -e "$(GRAY $(TIMESTAMP)) $(BLUE ${SCRIPT_NAME}) ERR: $@"
+}
+
+function init-verbose {
+	[ "" == "$1" ] && export SCRIPT_NAME="misc" || export SCRIPT_NAME=$(basename $1)
+}
+
+
+
+

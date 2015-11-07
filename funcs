@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Read a Markdown document, that use `###` to describe its
+# version number.
+#
+function read_app_version {
+	CONF=$1
+	if [ -f "${CONF}" ]; then
+		cat ${CONF} | grep '^###' | head -n 1 | awk '{print $2}'
+	else
+		echo "0.0.1"
+	fi
+}
+
+
+# The helper function is to read any configuration file, and 
+# remove commented lines and blank lines.
+#
+# By default, the output is a TEXT with '\n' as delimiter,
+# but the function also allows to replace '\n' with other
+# preferred delimiter in 2nd parameter, e.g. '\t', ' '.
+# 
+function read_conf {
+	FILENAME=$1
+	DELIMITER=$2
+	TMP=$(mktemp /tmp/XXXXXX)
+	cat ${FILENAME} | sed -e 's/^ *//' | sed -e 's/ *$//' | sed 's/#.*$//g' | grep -v '^$' > ${TMP}
+	if [ "" == "${DELIMITER}" ]; then
+		cat ${TMP}
+	else
+		cat ${TMP} | tr '\n' '\t' | sed 's/\t$//g' | tr '\t' "${DELIMITER}"
+	fi
+	rm -f ${TMP}
+}
