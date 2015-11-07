@@ -24,6 +24,12 @@ function BLUE {
 	echo "${COLOR}$@${NC}"
 }
 
+function RED {
+	COLOR='\033[1;31m'
+	NC='\033[0m'
+	echo "${COLOR}$@${NC}"
+}
+
 function TIMESTAMP {
 	date '+%H:%M:%S' 2>&1
 }
