@@ -32,3 +32,19 @@ function read_conf {
 	fi
 	rm -f ${TMP}
 }
+
+
+# Check the required command-line tools before running
+# the script.
+#
+function check_tool_prerequisites {
+	for p in "$@"; do
+		if [ "" == "$(which $p)" ]; then
+			ERR "check_tool_prerequisites: missing $p"
+			exit 1
+		else
+			DBG "check_tool_prerequisites: $(LIGHT_GREEN $p)"
+		fi
+	done
+}
+
