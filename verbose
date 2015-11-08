@@ -48,16 +48,16 @@ function TIMESTAMP {
 
 function DBG {
 	if [ "true" == "${SCRIPT_DEBUG}" ]; then
-		echo -e "$(GRAY $(TIMESTAMP)) $(BLUE ${SCRIPT_NAME}) DBG: $@"
+		echo -e "$(GRAY $(TIMESTAMP)) $(BLUE ${SCRIPT_NAME}) DBG: $@${LOG_LINE_END}"
 	fi
 }
 
 function INFO {
-	echo -e "$(GRAY $(TIMESTAMP)) $(BLUE ${SCRIPT_NAME}) MSG: $@"
+	echo -e "$(GRAY $(TIMESTAMP)) $(BLUE ${SCRIPT_NAME}) MSG: $@${LOG_LINE_END}"
 }
 
 function ERR {
-	echo -e "$(GRAY $(TIMESTAMP)) $(BLUE ${SCRIPT_NAME}) ERR: $@"
+	echo -e "$(GRAY $(TIMESTAMP)) $(BLUE ${SCRIPT_NAME}) ERR: $@${LOG_LINE_END}"
 }
 
 function RUN_CMD_STREAMING {
