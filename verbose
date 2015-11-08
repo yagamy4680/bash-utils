@@ -30,12 +30,20 @@ function RED {
 	echo "${COLOR}$@${NC}"
 }
 
+function PURPLE {
+	COLOR='\033[0;35m'
+	NC='\033[0m'
+	echo "${COLOR}$@${NC}"
+}
+
 function TIMESTAMP {
 	date '+%H:%M:%S' 2>&1
 }
 
 function DBG {
-	[ "true" == "${SCRIPT_DEBUG}" ] && echo -e "$(GRAY $(TIMESTAMP)) $(BLUE ${SCRIPT_NAME}) DBG: $@"
+	if [ "true" == "${SCRIPT_DEBUG}" ]; then
+		echo -e "$(GRAY $(TIMESTAMP)) $(BLUE ${SCRIPT_NAME}) DBG: $@"
+	fi
 }
 
 function INFO {
@@ -44,6 +52,11 @@ function INFO {
 
 function ERR {
 	echo -e "$(GRAY $(TIMESTAMP)) $(BLUE ${SCRIPT_NAME}) ERR: $@"
+}
+
+function RUN_CMD_STREAMING {
+	DBG "$(PURPLE $@)"
+	$@ 2>&1 | awk '{printf "\t\t%s\n", $0}'
 }
 
 function init-verbose {

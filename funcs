@@ -48,3 +48,20 @@ function check_tool_prerequisites {
 	done
 }
 
+
+function RUN_CMD_STREAMING {
+	INFO "$(PURPLE $@)"
+	$@ 2>&1 | awk '{printf "\t\t%s\n", $0}'
+}
+
+function RUN_CMD {
+	TMP=$(mktemp /tmp/XXXXXX)
+	INFO "$(PURPLE $@)"
+	$@ > ${TMP} 2>&1
+	if [ "0" != "$?" ]; then
+		cat ${TMP} | awk '{printf "\t\t%s\n", $0}'
+	fi
+	rm -f ${TMP}
+}
+
+
