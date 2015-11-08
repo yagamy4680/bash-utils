@@ -36,6 +36,12 @@ function PURPLE {
 	echo "${COLOR}$@${NC}"
 }
 
+function YELLOW {
+	COLOR='\033[0;33m'
+	NC='\033[0m'
+	echo "${COLOR}$@${NC}"
+}
+
 function TIMESTAMP {
 	date '+%H:%M:%S' 2>&1
 }
