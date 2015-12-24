@@ -1,0 +1,23 @@
+#!/bin/bash
+
+function add_date {
+	while IFS= read -r line; do
+		INFO ${line}
+	done
+}
+
+
+
+CURRENT=$(pwd)
+HOST=$1
+PORT=$2
+
+[ "" == "${HOST}" ] && echo "please specify hostname at 1st argument" && exit 1
+[ "" == "${PORT}" ] && echo "please specify port number at 2nd argument" && exit 1
+[ "" == "$(which socat)" ] && echo "missing socat tool, please install" && exit 1
+
+source $(dirname $0)/../verbose
+init-verbose
+
+INFO "connecting to ${HOST}:${PORT}"
+socat tcp-connect:${HOST}:${PORT} - | add_date
