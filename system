@@ -8,7 +8,7 @@ function generate_unique_id {
 	if [ "" == "${INTERFACE}" ]; then
 		echo "${ID_PREFIX}-xxxxxx"
 	else
-		MAC=$(ifconfig ${INTERFACE} | grep HWaddr | grep ${INTERFACE} | sed 's/.*HWaddr //g' | sed 's/://g')
+		MAC=$(ifconfig ${INTERFACE} | grep HWaddr | grep ${INTERFACE} | sed 's/.*HWaddr //g' | sed 's/://g' | sed 's/\ //g')
 		echo "${ID_PREFIX}-${MAC}"
 	fi
 }
@@ -33,16 +33,23 @@ function read_bbb_id {
 	fi
 }
 
+function read_rpi2_id {
+	ID_PREFIX="rpi2"
+	if [ "" == "$(cat /proc/cpuinfo | grep Hardware | grep BCM2709)" ]; then
+		echo ""
+	else
+		echo "${ID_PREFIX}-$(grep -Po '^Serial\s*:\s*\K[[:xdigit:]]{16}' /proc/cpuinfo | sed 's/\ //g')"
+	fi
+}
+
 function find_unique_id {
 	if [ "" != "$(virt-what)" ]; then
 		generate_unique_id "vm"
 	else
-		ID=$(read_bbb_id)
-		if [ "" == "${ID}" ]; then
-			generate_unique_id "devboard"
-		else
-			echo ${ID}
-		fi
+		ID="$(read_bbb_id)"
+		[ "" == "${ID}" ] && ID="$(read_rpi2_id)"
+		[ "" == "${ID}" ] && ID="$(generate_unique_id "devboard")"
+		echo ${ID}
 	fi
 }
 
