@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+
+function fn_exist {
+	declare -f -F $1 > /dev/null
+	return $?
+}
+
+function main {
+	FUNC=$1
+	shift
+	fn_exist ${FUNC} && ${FUNC} $@ || exit 1
+}
+
+SCRIPT=$1
+[ "" == "${SCRIPT}" ] && exit 1
+[ ! -f "${SCRIPT}"  ] && exit 1
+source ${SCRIPT} && exit 1
+
+shift
+main $@
