@@ -54,10 +54,14 @@ function find_unique_id {
 }
 
 function initiate_linux_os_variables {
+	initiate_os_variables
+}
+
+function initiate_os_variables {
 	export OS_KERNEL=$(uname -s | tr "[A-Z]" "[a-z]")
-	export OS_DIST_NAME=$(lsb_release -a 2>/dev/null | grep "^Distributor" | awk '{print $3}' | tr "[A-Z]" "[a-z]")
-	export OS_DIST_CODENAME=$(lsb_release -a 2>/dev/null | grep "^Codename" | awk '{print $2}' | tr "[A-Z]" "[a-z]")
+	[ "darwin" == "${OS_KERNEL}" ] && export OS_DIST_NAME="mac" || export OS_DIST_NAME=$(lsb_release -a 2>/dev/null | grep "^Distributor" | awk '{print $3}' | tr "[A-Z]" "[a-z]")
+	[ "darwin" == "${OS_KERNEL}" ] && export OS_DIST_CODENAME="mac" || export OS_DIST_CODENAME=$(lsb_release -a 2>/dev/null | grep "^Codename" | awk '{print $2}' | tr "[A-Z]" "[a-z]")
+	[ "darwin" == "${OS_KERNEL}" ] && export HW_CPUS=$(sysctl -n hw.physicalcpu_max) || export HW_CPUS=$(nproc)
 	export OS_ARCH=$(uname -m | tr "[A-Z]" "[a-z]")
 	export OS_NAME="${OS_KERNEL}-${OS_DIST_NAME}-${OS_DIST_CODENAME}"
-	[ "darwin" == "${OS_KERNEL}" ] && export HW_CPUS=$(sysctl -n hw.physicalcpu_max) || export HW_CPUS=$(nproc)
 }
