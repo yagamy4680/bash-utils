@@ -12,6 +12,13 @@ function read_app_version {
 	fi
 }
 
+# The helper function to clean up unused comments and empty lines
+# of given file (as 1st argument), and output to stdout.
+#
+function cat_conf_clearly {
+	cat $1 | sed -e 's/^ *//' | sed -e 's/ *$//' | sed 's/#.*$//g' | grep -v "^$"
+}
+
 
 # The helper function is to read any configuration file, and 
 # remove commented lines and blank lines.
@@ -24,7 +31,7 @@ function read_conf {
 	FILENAME=$1
 	DELIMITER=$2
 	TMP=$(mktemp /tmp/XXXXXX)
-	cat ${FILENAME} | sed -e 's/^ *//' | sed -e 's/ *$//' | sed 's/#.*$//g' | grep -v '^$' > ${TMP}
+	cat_conf_clearly ${FILENAME} > ${TMP}
 	if [ "" == "${DELIMITER}" ]; then
 		cat ${TMP}
 	else
