@@ -43,7 +43,7 @@ function YELLOW {
 }
 
 function TIMESTAMP {
-	date '+%H:%M:%S' 2>&1
+	date '+%m/%d %H:%M:%S' 2>&1
 }
 
 function DBG {
