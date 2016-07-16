@@ -80,6 +80,11 @@ function connect {
 	ssh ${IP} "$@"
 }
 
+function current {
+	cd ${SCRIPT_DIR}
+	echo "please switch to ${SCRIPT_DIR}"
+}
+
 initialize
 [ "$1" == "" ] && help && exit 0
 [ "$1" == "-h" ] && help && exit 0
@@ -88,6 +93,9 @@ CMD=$1
 shift
 
 case "${CMD}" in
+	current)
+		${CMD} $@
+		;;
 	list)
 		${CMD} $@
 		;;
