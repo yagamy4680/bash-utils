@@ -1,0 +1,107 @@
+#!/bin/bash
+
+function help {
+cat <<__EOF__
+hello
+__EOF__
+}
+
+function initialize {
+	export CURRENT=$(pwd)
+	cd $(dirname $0)
+	export SCRIPT_DIR=$(pwd)
+	export SERVER_JSON_FILE="${SCRIPT_DIR}/servers.json"
+
+	cd $(dirname $(readlink $0))
+	cd ..
+	export BASH_UTIL_DIR=$(pwd)
+	source "${BASH_UTIL_DIR}/verbose"
+	source "${BASH_UTIL_DIR}/funcs"
+	init-verbose $0
+	cd ${CURRENT}
+}
+
+function check_prerequisites {
+	[ ! -f "${SERVER_JSON_FILE}" ] && ERR "${SERVER_JSON_FILE} is missing!!" && exit 2
+}
+
+function list {
+	[ "" == "$(which csvlook)" ] && ERR "missing csvlook tool" && exit 3
+	[ "" == "$(which csvsort)" ] && ERR "missing csvsort tool" && exit 4
+	check_prerequisites
+	local TMP=$(mktemp /tmp/XXXXXX)
+	echo "name,alias,instance_id,instance,zone,public_ip,elastic_ip,private_ip,estimated_price" > ${TMP}
+	cat ${SERVER_JSON_FILE} | jq -r ".servers | .[] | [.name, .alias, .aws.instance_id, .aws.instance, .aws.zone, .aws.public_ip, .aws.elastic_ip, .aws.private_ip, .aws.estimated_price] | @csv" >> ${TMP}
+	case "$1" in
+		--name)
+			cat ${TMP} | csvsort -c name | csvlook
+			;;
+		--estimated_price)
+			cat ${TMP} | csvsort -c estimated_price,name -r | csvlook
+			;;
+		--csv)
+			cat ${TMP}
+			;;
+		*)
+			cat ${TMP} | csvsort -c name | csvlook
+			;;
+	esac
+	echo ""
+	echo "total $(cat ${TMP} | csvstat -c estimated_price --sum) USD per month"
+	rm -f ${TMP}
+}
+
+function search {
+	check_prerequisites
+	local SEARCH_FIELD=$1
+	local KEYWORD=$2
+	local OUTPUT_FIELD=$3
+	[ "" == "${OUTPUT_FIELD}" ] && echo "please specify [SERACH_FIELD] [KEYWORD] [OUTPUT_FIELD] for this command, e.g. $0 search .name web .alias" && exit 1
+	cat ${SERVER_JSON_FILE} | jq -c ".servers | .[] | select (${SEARCH_FIELD} | contains(\"${KEYWORD}\")) | [${SEARCH_FIELD}, ${OUTPUT_FIELD}, .alias]"
+}
+
+function connect {
+	check_prerequisites
+	local KEYWORD=$1
+	shift
+	[ "" == "${KEYWORD}" ] && echo "please specify the name or aliasname to ssh, e.g. $0 ssh web0" && exit 1
+	local TMP=$(mktemp /tmp/XXXXXX)
+	[ "" == "$(cat ${TMP})" ] && search .name ${KEYWORD} .aws.public_ip > ${TMP}
+	[ "" == "$(cat ${TMP})" ] && search .alias ${KEYWORD} .aws.public_ip > ${TMP}
+	[ "" == "$(cat ${TMP})" ] && search .aws.instance_id ${KEYWORD} .aws.public_ip > ${TMP}
+	[ "" == "$(cat ${TMP})" ] && echo "no such server with keyword [${KEYWORD}]" && rm -f ${TMP} && exit 11
+	[ "$(cat ${TMP} | wc -l)" -gt "1" ] && echo "please select one of these servers to login: " && cat ${TMP} | jq -r "@csv" | csvlook -H && rm -f ${TMP} && exit 12
+	local ALIAS=$(cat ${TMP} | jq -r ".[2]")
+	local IP=$(cat ${TMP} | jq -r ".[1]")
+	local NAME=$(cat ${TMP} | jq -r ".[0]")
+	rm -f ${TMP}
+	echo -e "connecting to $(YELLOW ${NAME})/$(YELLOW ${ALIAS}) ($(LIGHT_GREEN ${IP})) ..."
+	echo -e "\$ ssh ${IP} $(PURPLE \"$@\")"
+	ssh ${IP} "$@"
+}
+
+initialize
+[ "$1" == "" ] && help && exit 0
+[ "$1" == "-h" ] && help && exit 0
+[ "$1" == "--help" ] && help && exit 0
+CMD=$1
+shift
+
+case "${CMD}" in
+	list)
+		${CMD} $@
+		;;
+	search)
+		${CMD} $@
+		;;
+	connect)
+		${CMD} $@
+		;;
+	ssh)
+		connect $@
+		;;
+	*)
+		help
+		exit 1
+		;;
+esac
