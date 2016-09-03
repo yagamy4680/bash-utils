@@ -1,0 +1,89 @@
+#!/bin/bash
+#
+
+function initialize_variables {
+	local MYCLI=$(readlink -f $0)
+	local CURRENT=$(pwd)
+	cd $(dirname ${MYCLI})
+	cd ..
+	export BASH_UTIL_DIR=$(pwd)
+	cd $(dirname $0)
+	cd ..
+	export CLI_DIR=$(pwd)
+	export CLI_BIN_DIR=${CLI_DIR}/bin
+	export CLI_HELPER_DIR=${CLI_DIR}/helpers
+	export CLI_NAME=$(basename $0)
+	cd ${CURRENT}
+	export CLI_ACTION=$1
+	[ "-h" == "${CLI_ACTION}" ] && CLI_ACTION="help"
+	[ "" == "${CLI_ACTION}" ] && CLI_ACTION="help"
+	[ -f "${CLI_BIN_DIR}/.extra" ] && export CLI_BIN_DIR_EXTRA=$(cat ${CLI_BIN_DIR}/.extra)
+}
+
+
+function load_helpers {
+	# Initialize bash-util helpers
+	#
+	source "${BASH_UTIL_DIR}/verbose"
+	source "${BASH_UTIL_DIR}/funcs"
+	init-verbose $0
+
+	# Initialize myself helpers
+	#
+	[ -f "${CLI_HELPER_DIR}/funcs" ] && source ${CLI_HELPER_DIR}/funcs
+}
+
+function run_script {
+	local SCRIPT=$1
+	echo "using ${SCRIPT}"
+	source ${SCRIPT}
+	${CLI_NAME}_main $@
+	exit $?
+}
+
+function run_action {
+	local SCRIPT_NAME="${CLI_NAME}_${CLI_ACTION}"
+
+	# Try to find action script from CLI_BIN_DIR
+	#
+	local SCRIPT="${CLI_BIN_DIR}/${SCRIPT_NAME}"
+	[ -f "${SCRIPT}" ] && run_script ${SCRIPT} $@
+
+	# Try to find action script from CLI_BIN_DIR_EXTRA
+	#
+	SCRIPT="${CLI_BIN_DIR_EXTRA}/${SCRIPT_NAME}"
+	[ -f "${SCRIPT}" ] && run_script ${SCRIPT} $@
+
+	ERR "missing ${SCRIPT}" && exit 1
+}
+
+
+function list_commands {
+	local DIR=$1
+	[ -d "${DIR}" ] || return
+	local FOUND_SCRIPTS=($(find ${DIR} -name "${CLI_NAME}_*" | xargs -I{} sh -c "basename {}" | sed "s/${CLI_NAME}_//g" | sort))
+	for i in "${FOUND_SCRIPTS[@]}" ; do
+		local DESCRIPTION=$(cat ${DIR}/${CLI_NAME}_$i | grep "^##DOC:" | awk -F'\t' '{print $2}')
+		echo ${i} | awk '{printf "    \033[36m%-24s\033[0m  ", $1}'
+		echo ${DESCRIPTION}
+	done
+}
+
+
+function show_helps {
+	[ -f "${CLI_BIN_DIR}/.help" ] && cat ${CLI_BIN_DIR}/.help && echo ""
+	echo -e "Usage: $(LIGHT_GREEN ${CLI_NAME}) <<command>> arg1 arg2 arg3 ..."
+	echo -e "Here are supported commands:\n"
+	echo -e "STANDARD"
+	list_commands ${CLI_BIN_DIR}
+
+	[ "" != "${CLI_BIN_DIR_EXTRA}" ] && echo -e "EXTRA" && list_commands ${CLI_BIN_DIR}
+	echo ""
+}
+
+
+initialize_variables $1
+load_helpers
+shift
+
+[ "help" == "${CLI_ACTION}" ] && show_helps || run_action $@
