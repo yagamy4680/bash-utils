@@ -65,3 +65,17 @@ function initiate_os_variables {
 	export OS_ARCH=$(uname -m | tr "[A-Z]" "[a-z]")
 	export OS_NAME="${OS_KERNEL}-${OS_DIST_NAME}-${OS_DIST_CODENAME}"
 }
+
+# Used by bbb-gen-image to produce architecture-specific
+# system variables.
+#
+function generate_os_variable_dump {
+	local OUTPUT=$1
+	[ "" == "${OUTPUT}" ] && OUTPUT="/opt/system"
+	initiate_os_variables
+	rm -f ${OUTPUT}
+	for v in OS_KERNEL OS_DIST_NAME OS_DIST_CODENAME OS_ARCH OS_NAME; do
+		echo -e "${v}\t${!v}" >> ${OUTPUT}
+	done
+	cat ${OUTPUT} | awk '{printf "\t%s\n", $0}'
+}
