@@ -14,22 +14,20 @@ function generate_unique_id {
 }
 
 function read_bbb_id {
-	ID_PREFIX="bbb"
-
 	# BeagleBone-Black
 	#
-	EEPROM="/sys/bus/i2c/devices/1-0050/eeprom"
+	local EEPROM="/sys/bus/i2c/devices/1-0050/eeprom"
 	[ ! -f "${EEPROM}" ] && EEPROM="/sys/bus/i2c/devices/0-0050/eeprom"
 
 	# BeagleBone-Green
 	#
-	[ ! -f "${EEPROM}" ] && EEPROM="/sys/bus/i2c/devices/0-0050/at24-0/nvmem" && ID_PREFIX="bbg"
+	[ ! -f "${EEPROM}" ] && EEPROM="/sys/bus/i2c/devices/0-0050/at24-0/nvmem"
 
 	if [ ! -f "${EEPROM}" ]; then
 		echo ""
 	else
-		SERIAL=$(hexdump -e '8/1 "%c"' "${EEPROM}" -s 16 -n 12 2>&1)
-		echo "${ID_PREFIX}-${SERIAL}"
+		local SERIAL=$(hexdump -e '8/1 "%c"' "${EEPROM}" -s 16 -n 12 2>&1)
+		echo "${SERIAL}"
 	fi
 }
 
