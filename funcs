@@ -66,6 +66,8 @@ function check_python_package {
 		${PYTHON} -c "import ${p}" 2>&1 > /dev/null
 		[ "0" != "$?" ] && ERR "missing ${p}, please use pip to install: pip install ${p}" && MISSING="${MISSING} $p"
 	done
+	[ "" != "${MISSING}" ] && return 1
+	return 0
 }
 
 
