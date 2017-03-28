@@ -55,13 +55,22 @@ function initiate_linux_os_variables {
 	initiate_os_variables
 }
 
+function read_mac_osx_codename {
+	grep "SOFTWARE LICENSE AGREEMENT FOR OS X" \
+		"/System/Library/CoreServices/Setup Assistant.app/Contents/Resources/en.lproj/OSXSoftwareLicense.rtf" \
+		| sed -E 's/^SOFTWARE LICENSE AGREEMENT FOR OS X (.+)\\$/\1/' \
+		| tr "[A-Z]" "[a-z]" \
+		| tr ' ' '_'
+}
+
 function initiate_os_variables {
 	export OS_KERNEL=$(uname -s | tr "[A-Z]" "[a-z]")
-	[ "darwin" == "${OS_KERNEL}" ] && export OS_DIST_NAME="mac" || export OS_DIST_NAME=$(lsb_release -a 2>/dev/null | grep "^Distributor" | awk '{print $3}' | tr "[A-Z]" "[a-z]")
-	[ "darwin" == "${OS_KERNEL}" ] && export OS_DIST_CODENAME="mac" || export OS_DIST_CODENAME=$(lsb_release -a 2>/dev/null | grep "^Codename" | awk '{print $2}' | tr "[A-Z]" "[a-z]")
+	[ "darwin" == "${OS_KERNEL}" ] && export OS_DIST_NAME="macosx" || export OS_DIST_NAME=$(lsb_release -a 2>/dev/null | grep "^Distributor" | awk '{print $3}' | tr "[A-Z]" "[a-z]")
+	[ "darwin" == "${OS_KERNEL}" ] && export OS_DIST_CODENAME="" || export OS_DIST_CODENAME=$(lsb_release -a 2>/dev/null | grep "^Codename" | awk '{print $2}' | tr "[A-Z]" "[a-z]")
 	[ "darwin" == "${OS_KERNEL}" ] && export HW_CPUS=$(sysctl -n hw.physicalcpu_max) || export HW_CPUS=$(nproc)
 	export OS_ARCH=$(uname -m | tr "[A-Z]" "[a-z]")
 	export OS_NAME="${OS_KERNEL}-${OS_DIST_NAME}-${OS_DIST_CODENAME}"
+	[ "" == "${OS_DIST_CODENAME}" ] && export OS_NAME="${OS_KERNEL}-${OS_DIST_NAME}"
 }
 
 # Used by bbb-gen-image to produce architecture-specific
