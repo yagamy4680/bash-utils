@@ -14,6 +14,7 @@ function initialize_cli_variables {
 	export CLI_BIN_DIR=${CLI_DIR}/bin
 	export CLI_HELPER_DIR=${CLI_BIN_DIR}/helpers
 	export CLI_NAME=$(basename $0)
+	export CLI_PROJECT_NAME=$(basename ${CLI_DIR})
 
 	CLI_DGB "CLI_DIR = ${CLI_DIR}"
 	CLI_DGB "CLI_BIN_DIR = ${CLI_BIN_DIR}"
@@ -100,7 +101,7 @@ function check_script_prerequisites {
 function print_script_help {
 	local PRINT_HELP="mycli_command_help"
 	fn_exist ${PRINT_HELP} || return 0
-	echo -e "$(${PRINT_HELP})"
+	echo -e "\n$(${PRINT_HELP})"
 }
 
 
@@ -132,6 +133,7 @@ function run_script {
 		export CLI_DIR=$(pwd)
 		export CLI_BIN_DIR=${CLI_DIR}/bin
 		export CLI_HELPER_DIR=${CLI_BIN_DIR}/helpers
+		export CLI_PROJECT_NAME=$(basename ${CLI_DIR})
 	fi
 
 	# Load helper functions from the script's helper directory
@@ -146,7 +148,7 @@ function run_script {
 	# Run the command or print help documents.
 	#
 	case "${ARG1}" in
-		"help" | "-h" | "-help" | "--help")
+		"help" | "-h" | "-help" | "--help" | "")
 			print_script_help
 			;;
 		*)
