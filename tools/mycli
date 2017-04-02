@@ -97,6 +97,13 @@ function check_script_prerequisites {
 }
 
 
+function print_script_help {
+	local PRINT_HELP="mycli_command_help"
+	fn_exist ${PRINT_HELP} || return 0
+	echo -e "$(${PRINT_HELP})"
+}
+
+
 function run_script_pre {
 	check_script_prerequisites
 }
@@ -108,6 +115,7 @@ function run_script_post {
 
 
 function run_script {
+	local ARG1=$1
 	local ENTRY="$(basename ${MYCLI})_command_entry"
 	local SCRIPT="${CLI_BIN_DIR}/${CLI_ENTRY_NAME}"
 	[ ! -f "${SCRIPT}" ] && ERR "missing ${SCRIPT}" && exit 1
@@ -135,10 +143,18 @@ function run_script {
 	#
 	source ${SCRIPT}
 
-	# Run it with all prerequisites.
+	# Run the command or print help documents.
 	#
-	run_script_pre && ${ENTRY} $@ && run_script_post
-	exit $?
+	case "${ARG1}" in
+		"help" | "-h" | "-help" | "--help")
+			print_script_help
+			;;
+		*)
+			# Run it with all prerequisites.
+			#
+			run_script_pre && ${ENTRY} $@ && run_script_post
+			exit $?
+	esac
 }
 
 
