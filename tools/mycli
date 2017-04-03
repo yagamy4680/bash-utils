@@ -13,6 +13,7 @@ function initialize_cli_variables {
 	export CLI_DIR=$(pwd)
 	export CLI_BIN_DIR=${CLI_DIR}/bin
 	export CLI_HELPER_DIR=${CLI_BIN_DIR}/helpers
+	export CLI_RESOURCE_DIR=${CLI_DIR}/resources
 	export CLI_NAME=$(basename $0)
 	export CLI_PROJECT_NAME=$(basename ${CLI_DIR})
 
@@ -93,6 +94,7 @@ function check_script_prerequisites {
 		echo ""
 	done
 
+	rm -f ${TMP}
 	[ "" != "${MISSING}" ] && exit 1
 	return 0
 }
@@ -133,6 +135,7 @@ function run_script {
 		export CLI_DIR=$(pwd)
 		export CLI_BIN_DIR=${CLI_DIR}/bin
 		export CLI_HELPER_DIR=${CLI_BIN_DIR}/helpers
+		export CLI_RESOURCE_DIR=${CLI_DIR}/resources
 		export CLI_PROJECT_NAME=$(basename ${CLI_DIR})
 	fi
 
