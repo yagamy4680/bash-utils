@@ -1,0 +1,26 @@
+#!/bin/bash
+#
+
+function each_all {
+	echo "${PREFIX} => echo_all: $@"
+}
+
+
+function test01 {
+	export AAA=(aa bb cc dd)
+	export PREFIX="test1"
+	lamdba_foreach AAA each_all 11 22 33 44
+	unset AAA
+	unset PREFIX
+}
+
+
+function run_all_tests {
+	source $(dirname $0)/../lambda
+	local FUNCS=($(cat ${BASH_SOURCE[0]} | grep -P "^function test[0-9][0-9] {" | awk '{print $2}'))
+	for func in "${FUNCS[@]}"; do
+		$func
+	done
+}
+
+run_all_tests

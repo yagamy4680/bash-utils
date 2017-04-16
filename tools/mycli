@@ -38,6 +38,7 @@ function initialize_cli_variables {
 	#
 	load_helper_script "${BASH_UTIL_DIR}/verbose"
 	load_helper_script "${BASH_UTIL_DIR}/funcs"
+	load_helper_script "${BASH_UTIL_DIR}/lambda"
 	init_verbose "${CLI_NAME}[${CLI_ACTION}]"
 }
 
