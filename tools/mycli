@@ -47,7 +47,7 @@ function load_helper_script {
 	local SCRIPT=$1
 	local COLOR='\033[0;32m'
 	local NC='\033[0m'
-	[ "help" != "${CLI_ACTION}" ] && echo -e "loading ${COLOR}${SCRIPT}${NC}"
+	[ "help" != "${CLI_ACTION}" ] && [ "true" != "${IGNORE_DEBUG_LOAD_HELPER}" ] && echo -e "loading ${COLOR}${SCRIPT}${NC}"
 	source $1
 }
 

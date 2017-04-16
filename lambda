@@ -40,8 +40,9 @@ function lambda_function_exist {
 #		- true
 #
 function lamdba_foreach {
-	local -n THE_LIST=$1; shift
-	[ "" == "${THE_LIST}" ] && return 1
+	local -n ITEMS=$1; shift
+	[ "0" == "${#ITEMS[@]}" ] && return 0
+	[ "" == "${ITEMS}" ] && return 1
 
 	local ITERATEE=$1; shift
 	[ "" == "${ITERATEE}" ] && return 2
@@ -50,12 +51,14 @@ function lamdba_foreach {
 	[ "" == "${FOREACH_REVERSE_ORDER}" ] && local FOREACH_REVERSE_ORDER="false"
 	[ "" == "${FOREACH_IGNORE_ERROR}"  ] && local FOREACH_IGNORE_ERROR="false"
 
+	local THE_TMP_FILE=(mktemp /tmp/XXXXXX)
+	for item in "${ITEMS[@]}"; do echo "${item}" >> ${THE_TMP_FILE}; done
 	if [ "true" == "${FOREACH_REVERSE_ORDER}" ]; then
-		local THE_TMP_FILE=(mktemp /tmp/XXXXXX)
-		for item in "${THE_LIST[@]}"; do echo "${item}" >> ${THE_TMP_FILE}; done
-		THE_LIST=($(tac ${THE_TMP_FILE}))
-		rm -f ${THE_TMP_FILE}
+		local THE_LIST=($(tac ${THE_TMP_FILE}))
+	else
+		local THE_LIST=($(cat ${THE_TMP_FILE}))
 	fi
+	rm -f ${THE_TMP_FILE}
 
 	for item in "${THE_LIST[@]}"; do
 		# echo "applying ${ITERATEE} ${item} $@"
