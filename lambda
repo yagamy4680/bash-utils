@@ -54,10 +54,13 @@ function lamdba_foreach {
 	local THE_TMP_FILE=(mktemp /tmp/XXXXXX)
 	for item in "${ITEMS[@]}"; do echo "${item}" >> ${THE_TMP_FILE}; done
 	if [ "true" == "${FOREACH_REVERSE_ORDER}" ]; then
+		IFS=$'\n'
 		local THE_LIST=($(tac ${THE_TMP_FILE}))
 	else
+		IFS=$'\n'
 		local THE_LIST=($(cat ${THE_TMP_FILE}))
 	fi
+	unset IFS
 	rm -f ${THE_TMP_FILE}
 
 	for item in "${THE_LIST[@]}"; do
