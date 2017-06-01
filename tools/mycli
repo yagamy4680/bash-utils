@@ -138,6 +138,7 @@ function run_script {
 		export CLI_HELPER_DIR=${CLI_BIN_DIR}/helpers
 		export CLI_RESOURCE_DIR=${CLI_DIR}/resources
 		export CLI_PROJECT_NAME=$(basename ${CLI_DIR})
+		cd ${CURRENT}
 	fi
 
 	# Load helper functions from the script's helper directory
