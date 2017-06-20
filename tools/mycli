@@ -225,6 +225,7 @@ function show_helps {
 
 
 function mycli_main {
+	[ "/usr/bin:/bin" == "${PATH}" ] && export PATH=$(cat /etc/environment | grep "^PATH=" | awk -F'=' '{print $2}' | sed 's/"//g')
 	initialize_cli_variables $1
 	shift
 	[ "help" == "${CLI_ACTION}" ] && show_helps
