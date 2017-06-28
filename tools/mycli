@@ -229,8 +229,8 @@ function mycli_main {
 	initialize_cli_variables $1
 	shift
 	[ "help" == "${CLI_ACTION}" ] && show_helps
-	
-	run_script $@
+
+	run_script "$@"
 }
 
-mycli_main $@
+mycli_main "$@"
