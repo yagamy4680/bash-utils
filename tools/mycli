@@ -5,8 +5,18 @@ function CLI_DGB {
 	[ "true" == "${CLI_DEBUG}" ] && echo "$@"
 }
 
+function READLINK {
+	local FILE=$1
+	if [ "darwin" == "${OS}" ]; then
+		[ -L "${FILE}" ] && readlink ${FILE} || echo ${FILE}
+	else
+		readlink -f ${FILE}
+	fi
+}
+
 function initialize_cli_variables {
-	export MYCLI=$(readlink -f $0)
+	export OS=$(uname -s | tr '[A-Z]' '[a-z]')
+	export MYCLI=$(READLINK $0)
 	local CURRENT=$(pwd)
 	cd $(dirname $0)
 	cd ..
@@ -22,6 +32,7 @@ function initialize_cli_variables {
 	CLI_DGB "CLI_HELPER_DIR = ${CLI_HELPER_DIR}"
 	CLI_DGB "CLI_NAME = ${CLI_NAME}"
 
+	cd $(dirname $0)
 	cd $(dirname ${MYCLI})
 	cd ..
 	export BASH_UTIL_DIR=$(pwd)
@@ -124,7 +135,7 @@ function run_script {
 	local SCRIPT="${CLI_BIN_DIR}/${CLI_ENTRY_NAME}"
 	[ ! -f "${SCRIPT}" ] && ERR "missing ${SCRIPT}" && exit 1
 
-	local SCRIPT_DIR=$(dirname $(readlink -f ${SCRIPT}))
+	local SCRIPT_DIR=$(dirname $(READLINK ${SCRIPT}))
 	if [ "${SCRIPT_DIR}" != "${CLI_BIN_DIR}" ]; then
 		# Re-initialize CLI_XXX variables because
 		# this subcommand is a symbolic link to
@@ -191,7 +202,7 @@ function list_commands {
 	local FOUND_SCRIPTS=($(find ${DIR} -name "${CLI_NAME}_*" | sort))
 	for i in "${FOUND_SCRIPTS[@]}" ; do
 		local SCRIPT=$i
-		local REAL_PATH=$(readlink -f ${SCRIPT})
+		local REAL_PATH=$(READLINK ${SCRIPT})
 		if [ "true" == "${BUILTIN}" ]; then
 			[ "${REAL_PATH}" == "${SCRIPT}" ] && show_oneline_doc ${SCRIPT}
 			continue
@@ -213,7 +224,7 @@ function show_helps {
 	# exit this function immediately.
 	#
 	local TMP=$(mktemp /tmp/XXXXXX)
-	find ${CLI_BIN_DIR} -name "${CLI_NAME}_*" | xargs -I{} sh -c "readlink -f {}" | grep -v ${CLI_BIN_DIR} > ${TMP}
+	find ${CLI_BIN_DIR} -name "${CLI_NAME}_*" | xargs -I{} sh -c "READLINK {}" | grep -v ${CLI_BIN_DIR} > ${TMP}
 	[ "0" == "$(cat ${TMP} | wc -l)" ] && rm -f ${TMP} && exit 0
 
 	rm -f ${TMP}
