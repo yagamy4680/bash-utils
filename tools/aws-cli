@@ -32,6 +32,8 @@ function list {
 	local TMP=$(mktemp /tmp/XXXXXX)
 	echo "name,alias,instance_id,instance,zone,public_ip,elastic_ip,private_ip,estimated_price" > ${TMP}
 	cat ${SERVER_JSON_FILE} | jq -r ".servers | .[] | [.name, .alias, .aws.instance_id, .aws.instance, .aws.zone, .aws.public_ip, .aws.elastic_ip, .aws.private_ip, .aws.estimated_price] | @csv" >> ${TMP}
+	unset LC_ALL
+	unset LANG
 	case "$1" in
 		--name)
 			cat ${TMP} | csvsort -c name | csvlook
@@ -81,7 +83,7 @@ function connect {
 }
 
 initialize
-[ "$1" == "" ] && help && exit 0
+[ "$1" == "" ] && list && exit 0
 [ "$1" == "-h" ] && help && exit 0
 [ "$1" == "--help" ] && help && exit 0
 CMD=$1
