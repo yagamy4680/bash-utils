@@ -1,0 +1,247 @@
+#!/bin/bash
+#
+
+function CLI_DGB {
+	[ "true" == "${CLI_DEBUG}" ] && echo "$@"
+}
+
+function READLINK {
+	local FILE=$1
+	if [ "darwin" == "${OS}" ]; then
+		[ -L "${FILE}" ] && readlink ${FILE} || echo ${FILE}
+	else
+		readlink -f ${FILE}
+	fi
+}
+
+function initialize_cli_variables {
+	export OS=$(uname -s | tr '[A-Z]' '[a-z]')
+	export MYCLI=$(READLINK $0)
+	local CURRENT=$(pwd)
+	cd $(dirname $0)
+	cd ..
+	export CLI_DIR=$(pwd)
+	export CLI_BIN_DIR=${CLI_DIR}/bin
+	export CLI_HELPER_DIR=${CLI_BIN_DIR}/helpers
+	export CLI_RESOURCE_DIR=${CLI_DIR}/resources
+	export CLI_NAME=$(basename $0)
+	export CLI_PROJECT_NAME=$(basename ${CLI_DIR})
+
+	CLI_DGB "CLI_DIR = ${CLI_DIR}"
+	CLI_DGB "CLI_BIN_DIR = ${CLI_BIN_DIR}"
+	CLI_DGB "CLI_HELPER_DIR = ${CLI_HELPER_DIR}"
+	CLI_DGB "CLI_NAME = ${CLI_NAME}"
+
+	cd $(dirname $0)
+	cd $(dirname ${MYCLI})
+	cd ..
+	export BASH_UTIL_DIR=$(pwd)
+
+	cd ${CURRENT}
+	export CLI_ACTION=$1
+	[ "-h" == "${CLI_ACTION}" ] && CLI_ACTION="help"
+	[ "--help" == "${CLI_ACTION}" ] && CLI_ACTION="help"
+	[ "" == "${CLI_ACTION}" ] && CLI_ACTION="help"
+
+	export CLI_ENTRY_NAME="${CLI_NAME}_${CLI_ACTION}"
+
+	# Initialize bash-util helpers
+	#
+	load_helper_script "${BASH_UTIL_DIR}/verbose"
+	load_helper_script "${BASH_UTIL_DIR}/funcs"
+	load_helper_script "${BASH_UTIL_DIR}/lambda"
+	init_verbose "${CLI_NAME}[${CLI_ACTION}]"
+}
+
+
+function load_helper_script {
+	local SCRIPT=$1
+	local COLOR='\033[0;32m'
+	local NC='\033[0m'
+	[ "help" != "${CLI_ACTION}" ] && [ "true" != "${IGNORE_DEBUG_LOAD_HELPER}" ] && echo -e "loading ${COLOR}${SCRIPT}${NC}"
+	source $1
+}
+
+
+function fn_exist {
+	declare -f -F $1 > /dev/null
+	return $?
+}
+
+
+function check_script_prerequisites {
+	local PREREQUISITES="mycli_command_prerequisites"
+	fn_exist ${PREREQUISITES} || return 0
+
+	local MISSING=""
+	local TMP=$(mktemp /tmp/XXXXXX)
+	${PREREQUISITES} > ${TMP}
+
+	local PKGS=($(cat ${TMP} | grep -v "^python2:" | grep -v "^python3"))
+	for p in "${PKGS[@]}"; do
+		echo -en "checking $(YELLOW $p) in system directory ..."
+		[ "" == "$(which $p)" ] && echo -e " => missing $p, please install it" && MISSING="${MISSING} $p" && continue
+		echo ""
+	done
+
+	local PYTHON="python"
+	local PIP="pip"
+	local PY_PKGS=($(cat ${TMP} | grep "^python2:"))
+	for p in "${PY_PKGS[@]}"; do
+		local PACKAGE=$(echo $p | awk -F':' '{print $2}')
+		echo -en "checking $(YELLOW ${PACKAGE}) in python2 ..."
+		${PYTHON} -c "import ${PACKAGE}" > /dev/null 2>&1
+		[ "0" != "$?" ] && echo -e " => missing, please use pip to install: $(PURPLE ${PIP} install ${PACKAGE})" && MISSING="${MISSING} $p" && continue
+		echo ""
+	done
+
+	PYTHON="python3"
+	PIP="pip3"
+	PY_PKGS=($(cat ${TMP} | grep "^python3:"))
+	for p in "${PY_PKGS[@]}"; do
+		local PACKAGE=$(echo $p | awk -F':' '{print $2}')
+		echo -en "checking $(YELLOW ${PACKAGE}) in python3 ..."
+		${PYTHON} -c "import ${PACKAGE}" > /dev/null 2>&1
+		[ "0" != "$?" ] && echo -e " => missing, please use pip to install: $(PURPLE ${PIP} install ${PACKAGE})" && MISSING="${MISSING} $p" && continue
+		echo ""
+	done
+
+	rm -f ${TMP}
+	[ "" != "${MISSING}" ] && exit 1
+	return 0
+}
+
+
+function print_script_help {
+	local PRINT_HELP="mycli_command_help"
+	fn_exist ${PRINT_HELP} || return 0
+	echo -e "\n$(${PRINT_HELP})"
+}
+
+
+function run_script_pre {
+	check_script_prerequisites
+}
+
+
+function run_script_post {
+	return
+}
+
+
+function run_script {
+	local ARG1=$1
+	local ENTRY="$(basename ${MYCLI})_command_entry"
+	local SCRIPT="${CLI_BIN_DIR}/${CLI_ENTRY_NAME}"
+	[ ! -f "${SCRIPT}" ] && ERR "missing ${SCRIPT}" && exit 1
+
+	local SCRIPT_DIR=$(dirname $(READLINK ${SCRIPT}))
+	if [ "${SCRIPT_DIR}" != "${CLI_BIN_DIR}" ]; then
+		# Re-initialize CLI_XXX variables because
+		# this subcommand is a symbolic link to
+		# other directories.
+		#
+		local CURRENT=$(pwd)
+		cd ${SCRIPT_DIR}
+		cd ..
+		export CLI_DIR=$(pwd)
+		export CLI_BIN_DIR=${CLI_DIR}/bin
+		export CLI_HELPER_DIR=${CLI_BIN_DIR}/helpers
+		export CLI_RESOURCE_DIR=${CLI_DIR}/resources
+		export CLI_PROJECT_NAME=$(basename ${CLI_DIR})
+		cd ${CURRENT}
+	fi
+
+	# Load helper functions from the script's helper directory
+	#
+	local SCRIPT_HELPERS="${CLI_HELPER_DIR}/funcs"
+	[ -f "${SCRIPT_HELPERS}" ] && load_helper_script ${SCRIPT_HELPERS}
+
+	# Load the script
+	#
+	source ${SCRIPT}
+
+	# Run the command or print help documents.
+	#
+	case "${ARG1}" in
+		"help" | "-h" | "-help" | "--help" | "")
+			print_script_help
+			;;
+		*)
+			# Run it with all prerequisites.
+			#
+			run_script_pre && ${ENTRY} $@ && run_script_post
+			exit $?
+	esac
+}
+
+
+function show_oneline_doc {
+	local SCRIPT=$1
+	local REAL_PATH=$2
+	local NAME=$(basename ${SCRIPT} | sed "s/${CLI_NAME}_//g")
+	local DESCRIPTION=$(cat ${SCRIPT} | grep "^##DOC:" | awk -F'\t' '{print $2}')
+	if [ "" == "${REAL_PATH}" ]; then
+		echo ${NAME} | awk '{printf "    \033[36m%12s\033[0m  ", $1}'
+		echo ${DESCRIPTION}
+	else
+		echo ${NAME} | awk '{printf "    \033[36m%12s\033[0m  ", $1}'
+		echo ${DESCRIPTION}
+		echo "" | awk '{printf "    \033[36m%12s\033[0m  ", $1}'
+		echo -e $(GRAY ${REAL_PATH})
+	fi
+}
+
+
+function list_commands {
+	local DIR=$1
+	[ -d "${DIR}" ] || return
+	[ "" == "${BUILTIN}" ] && local BUILTIN="true"
+	# local FOUND_SCRIPTS=($(find ${DIR} -name "${CLI_NAME}_*" | xargs -I{} sh -c "basename {}" | sed "s/${CLI_NAME}_//g" | sort))
+
+	local FOUND_SCRIPTS=($(find ${DIR} -name "${CLI_NAME}_*" | sort))
+	for i in "${FOUND_SCRIPTS[@]}" ; do
+		local SCRIPT=$i
+		local REAL_PATH=$(READLINK ${SCRIPT})
+		if [ "true" == "${BUILTIN}" ]; then
+			[ "${REAL_PATH}" == "${SCRIPT}" ] && show_oneline_doc ${SCRIPT}
+			continue
+		fi
+		[ "${REAL_PATH}" == "${SCRIPT}" ] && continue
+		show_oneline_doc ${SCRIPT} ${REAL_PATH}
+	done
+}
+
+
+function show_helps {
+	[ -f "${CLI_BIN_DIR}/.help" ] && cat ${CLI_BIN_DIR}/.help && echo ""
+	echo -e "Usage: $(LIGHT_GREEN ${CLI_NAME}) <<command>> arg1 arg2 arg3 ..."
+	echo -e "Here are supported commands:\n"
+	echo -e "BUILT-IN"
+	BUILTIN=true list_commands ${CLI_BIN_DIR}
+
+	# When there is no extra commands (that are symbolic links), then
+	# exit this function immediately.
+	#
+	local TMP=$(mktemp /tmp/XXXXXX)
+	find ${CLI_BIN_DIR} -name "${CLI_NAME}_*" | xargs -I{} sh -c "READLINK {}" | grep -v ${CLI_BIN_DIR} > ${TMP}
+	[ "0" == "$(cat ${TMP} | wc -l)" ] && rm -f ${TMP} && exit 0
+
+	rm -f ${TMP}
+	echo ""
+	echo -e "EXTRA"
+	BUILTIN=false list_commands ${CLI_BIN_DIR}
+	exit 0
+}
+
+
+function mycli_main {
+	[ "/usr/bin:/bin" == "${PATH}" ] && export PATH=$(cat /etc/environment | grep "^PATH=" | awk -F'=' '{print $2}' | sed 's/"//g')
+	initialize_cli_variables $1
+	shift
+	[ "help" == "${CLI_ACTION}" ] && show_helps
+
+	run_script "$@"
+}
+
+mycli_main "$@"

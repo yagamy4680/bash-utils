@@ -55,6 +55,22 @@ function check_tool_prerequisites {
 	done
 }
 
+# Check the python2/python3 package is installed or not
+#
+function check_python_package {
+	local PYTHON="python"
+	local PIP="pip"
+	local MISSING=""
+	[ "true" == "${USING_PYTHON3}" ] && PYTHON="python3" && PIP="pip3"
+	for p in "$@"; do
+		INFO "checking python package: $(LIGHT_GREEN ${p})"
+		${PYTHON} -c "import ${p}" 2>&1 > /dev/null
+		[ "0" != "$?" ] && ERR "missing ${p}, please use pip to install: ${PIP} install ${p}" && MISSING="${MISSING} $p"
+	done
+	[ "" != "${MISSING}" ] && return 1
+	return 0
+}
+
 
 function RUN_CMD_STREAMING {
 	INFO "$(PURPLE $@)"

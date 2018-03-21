@@ -14,22 +14,20 @@ function generate_unique_id {
 }
 
 function read_bbb_id {
-	ID_PREFIX="bbb"
-
 	# BeagleBone-Black
 	#
-	EEPROM="/sys/bus/i2c/devices/1-0050/eeprom"
+	local EEPROM="/sys/bus/i2c/devices/1-0050/eeprom"
 	[ ! -f "${EEPROM}" ] && EEPROM="/sys/bus/i2c/devices/0-0050/eeprom"
 
 	# BeagleBone-Green
 	#
-	[ ! -f "${EEPROM}" ] && EEPROM="/sys/bus/i2c/devices/0-0050/at24-0/nvmem" && ID_PREFIX="bbg"
+	[ ! -f "${EEPROM}" ] && EEPROM="/sys/bus/i2c/devices/0-0050/at24-0/nvmem"
 
 	if [ ! -f "${EEPROM}" ]; then
 		echo ""
 	else
-		SERIAL=$(hexdump -e '8/1 "%c"' "${EEPROM}" -s 16 -n 12 2>&1)
-		echo "${ID_PREFIX}-${SERIAL}"
+		local SERIAL=$(hexdump -e '8/1 "%c"' "${EEPROM}" -s 16 -n 12 2>&1)
+		echo "${SERIAL}"
 	fi
 }
 
@@ -57,11 +55,34 @@ function initiate_linux_os_variables {
 	initiate_os_variables
 }
 
+function read_mac_osx_codename {
+	grep "SOFTWARE LICENSE AGREEMENT FOR OS X" \
+		"/System/Library/CoreServices/Setup Assistant.app/Contents/Resources/en.lproj/OSXSoftwareLicense.rtf" \
+		| sed -E 's/^SOFTWARE LICENSE AGREEMENT FOR OS X (.+)\\$/\1/' \
+		| tr "[A-Z]" "[a-z]" \
+		| tr ' ' '_'
+}
+
 function initiate_os_variables {
 	export OS_KERNEL=$(uname -s | tr "[A-Z]" "[a-z]")
-	[ "darwin" == "${OS_KERNEL}" ] && export OS_DIST_NAME="mac" || export OS_DIST_NAME=$(lsb_release -a 2>/dev/null | grep "^Distributor" | awk '{print $3}' | tr "[A-Z]" "[a-z]")
-	[ "darwin" == "${OS_KERNEL}" ] && export OS_DIST_CODENAME="mac" || export OS_DIST_CODENAME=$(lsb_release -a 2>/dev/null | grep "^Codename" | awk '{print $2}' | tr "[A-Z]" "[a-z]")
+	[ "darwin" == "${OS_KERNEL}" ] && export OS_DIST_NAME="macosx" || export OS_DIST_NAME=$(lsb_release -a 2>/dev/null | grep "^Distributor" | awk '{print $3}' | tr "[A-Z]" "[a-z]")
+	[ "darwin" == "${OS_KERNEL}" ] && export OS_DIST_CODENAME="" || export OS_DIST_CODENAME=$(lsb_release -a 2>/dev/null | grep "^Codename" | awk '{print $2}' | tr "[A-Z]" "[a-z]")
 	[ "darwin" == "${OS_KERNEL}" ] && export HW_CPUS=$(sysctl -n hw.physicalcpu_max) || export HW_CPUS=$(nproc)
 	export OS_ARCH=$(uname -m | tr "[A-Z]" "[a-z]")
 	export OS_NAME="${OS_KERNEL}-${OS_DIST_NAME}-${OS_DIST_CODENAME}"
+	[ "" == "${OS_DIST_CODENAME}" ] && export OS_NAME="${OS_KERNEL}-${OS_DIST_NAME}"
+}
+
+# Used by bbb-gen-image to produce architecture-specific
+# system variables.
+#
+function generate_os_variable_dump {
+	local OUTPUT=$1
+	[ "" == "${OUTPUT}" ] && OUTPUT="/opt/system"
+	initiate_os_variables
+	rm -f ${OUTPUT}
+	for v in OS_KERNEL OS_DIST_NAME OS_DIST_CODENAME OS_ARCH OS_NAME; do
+		echo -e "${v}\t${!v}" >> ${OUTPUT}
+	done
+	cat ${OUTPUT} | awk '{printf "\t%s\n", $0}'
 }

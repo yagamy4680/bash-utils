@@ -1,0 +1,75 @@
+#!/bin/bash
+#
+
+
+# Check the existence of the function with the given name.
+#
+function lambda_function_exist {
+	declare -f -F $1 > /dev/null
+	return $?
+}
+
+# Applies the function ITERATEE (from 2nd argument) with rest arguments
+# of this function to each item in the global variable referenced by
+# 1st argument.
+#
+# For example, when the function `lamdba_foreach` is called as below
+#
+#	export AAA=(x y z)
+#	lamdba_foreach AAA my_func aa bb cc
+#
+# Above function call equals to the combination of following function calls:
+#
+#	my_func x aa bb cc
+#	my_func y aa bb cc
+#	my_func z aa bb cc
+#
+# When non-zero value is returned from ITERATEE when applying to one item, 
+# the rest items won't be applied and the function returns that non-zero 
+# value to callee immediately.
+#
+#
+# Global Variables for Behavior Changes:
+#
+#	- FOREACH_REVERSE_ORDER, indicates the order of items in FOREACH_LIST to apply apply function ITERATEE.
+#		- false, (by default), use original order of items in FOREACH_LIST
+#		- true, use reversed order of items in FOREACH_LIST
+#
+#	- FOREACH_IGNORE_ERROR, ignore all non-zero values when applying ITERATEE on any item.
+#		- false (by default)
+#		- true
+#
+function lamdba_foreach {
+	local -n ITEMS=$1; shift
+	[ "0" == "${#ITEMS[@]}" ] && return 0
+	[ "" == "${ITEMS}" ] && return 1
+
+	local ITERATEE=$1; shift
+	[ "" == "${ITERATEE}" ] && return 2
+	lambda_function_exist ${ITERATEE} || return 3
+
+	[ "" == "${FOREACH_REVERSE_ORDER}" ] && local FOREACH_REVERSE_ORDER="false"
+	[ "" == "${FOREACH_IGNORE_ERROR}"  ] && local FOREACH_IGNORE_ERROR="false"
+
+	local THE_TMP_FILE=(mktemp /tmp/XXXXXX)
+	for item in "${ITEMS[@]}"; do echo "${item}" >> ${THE_TMP_FILE}; done
+	if [ "true" == "${FOREACH_REVERSE_ORDER}" ]; then
+		IFS=$'\n'
+		local THE_LIST=($(tac ${THE_TMP_FILE}))
+	else
+		IFS=$'\n'
+		local THE_LIST=($(cat ${THE_TMP_FILE}))
+	fi
+	unset IFS
+	rm -f ${THE_TMP_FILE}
+
+	for item in "${THE_LIST[@]}"; do
+		# echo "applying ${ITERATEE} ${item} $@"
+		${ITERATEE} ${item} $@
+		local EXIT_VALUE=$?
+		# echo "exit_value => ${EXIT_VALUE}"
+		[ "true" == "${FOREACH_IGNORE_ERROR}" ] && continue
+		[ "0" != "${EXIT_VALUE}" ] && return ${EXIT_VALUE}
+	done
+	return 0
+}

@@ -1,44 +1,50 @@
 #!/bin/bash
 
 function LIGHT_GREEN {
-	COLOR='\033[1;32m'
-	NC='\033[0m'
+	local COLOR='\033[1;32m'
+	local NC='\033[0m'
+	echo "${COLOR}$@${NC}"
+}
+
+function GREEN {
+	local COLOR='\033[0;32m'
+	local NC='\033[0m'
 	echo "${COLOR}$@${NC}"
 }
 
 function LIGHT_GRAY {
-	COLOR='\033[0;37m'
-	NC='\033[0m'
+	local COLOR='\033[0;37m'
+	local NC='\033[0m'
 	echo "${COLOR}$1${NC}"
 }
 
 function GRAY {
-	COLOR='\033[1;90m'
-	NC='\033[0m'
+	local COLOR='\033[1;90m'
+	local NC='\033[0m'
 	echo "${COLOR}$@${NC}"
 }
 
 function BLUE {
-	COLOR='\033[1;34m'
-	NC='\033[0m'
+	local COLOR='\033[1;34m'
+	local NC='\033[0m'
 	echo "${COLOR}$@${NC}"
 }
 
 function RED {
-	COLOR='\033[1;31m'
-	NC='\033[0m'
+	local COLOR='\033[1;31m'
+	local NC='\033[0m'
 	echo "${COLOR}$@${NC}"
 }
 
 function PURPLE {
-	COLOR='\033[0;35m'
-	NC='\033[0m'
+	local COLOR='\033[0;35m'
+	local NC='\033[0m'
 	echo "${COLOR}$@${NC}"
 }
 
 function YELLOW {
-	COLOR='\033[0;33m'
-	NC='\033[0m'
+	local COLOR='\033[0;33m'
+	local NC='\033[0m'
 	echo "${COLOR}$@${NC}"
 }
 
@@ -65,10 +71,13 @@ function RUN_CMD_STREAMING {
 	$@ 2>&1 | awk '{printf "\t\t%s\n", $0}'
 }
 
-function init-verbose {
+function init_verbose {
 	[ "" == "$1" ] && export SCRIPT_NAME="misc" || export SCRIPT_NAME=$(basename $1)
 }
 
-
-
+function init-verbose {
+	# to keep backward compatibility, this function must exist.
+	#
+	init_verbose $@
+}
 
