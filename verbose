@@ -71,6 +71,15 @@ function RUN_CMD_STREAMING {
 	$@ 2>&1 | awk '{printf "\t\t%s\n", $0}'
 }
 
+function RUN_ALL {
+	while read LINE ; do
+		RUN_CMD_STREAMING "${LINE}"
+		local EXIT_CODE=$?
+		[ "0" != "${EXIT_CODE}" ] && return ${EXIT_CODE}
+	done < "${1:-/dev/stdin}"
+	return 0
+}
+
 function init_verbose {
 	[ "" == "$1" ] && export SCRIPT_NAME="misc" || export SCRIPT_NAME=$(basename $1)
 	
