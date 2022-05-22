@@ -73,6 +73,13 @@ function RUN_CMD_STREAMING {
 
 function init_verbose {
 	[ "" == "$1" ] && export SCRIPT_NAME="misc" || export SCRIPT_NAME=$(basename $1)
+	
+	##
+	# https://stackoverflow.com/questions/1221833/pipe-output-and-capture-exit-status-in-bash
+	#
+	# To fix #1 issue: `RUN_CMD_STREAMING` does not return exit code properly.
+	#
+	set -o pipefail
 }
 
 function init-verbose {
