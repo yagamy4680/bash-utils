@@ -19,19 +19,31 @@ function LIGHT_GRAY {
 }
 
 function GRAY {
-	local COLOR='\033[1;90m'
+	local COLOR='\033[0;90m'
 	local NC='\033[0m'
 	echo "${COLOR}$@${NC}"
 }
 
 function BLUE {
-	local COLOR='\033[1;34m'
+	local COLOR='\033[0;34m'
+	local NC='\033[0m'
+	echo "${COLOR}$@${NC}"
+}
+
+function MAGENTA {
+	local COLOR='\033[0;35m'
+	local NC='\033[0m'
+	echo "${COLOR}$@${NC}"
+}
+
+function CYAN {
+	local COLOR='\033[0;36m'
 	local NC='\033[0m'
 	echo "${COLOR}$@${NC}"
 }
 
 function RED {
-	local COLOR='\033[1;31m'
+	local COLOR='\033[0;31m'
 	local NC='\033[0m'
 	echo "${COLOR}$@${NC}"
 }
