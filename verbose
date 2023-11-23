@@ -1,5 +1,10 @@
 #!/bin/bash
 
+##
+# ANSI Escape Sequences 
+# https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
+#
+
 function LIGHT_GREEN {
 	local COLOR='\033[1;32m'
 	local NC='\033[0m'
